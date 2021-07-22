@@ -1,6 +1,6 @@
 [package]
 name = "no-proxy"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Jérémie Drouet <jeremie.drouet@gmail.com>"]
 edition = "2018"
 description = "Parses and evaluate no_proxy configuration"
