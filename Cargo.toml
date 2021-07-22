@@ -3,6 +3,10 @@ name = "no-proxy"
 version = "0.1.0"
 authors = ["Jérémie Drouet <jeremie.drouet@gmail.com>"]
 edition = "2018"
+description = "Parses and evaluate no_proxy configuration"
+license = "MIT"
+repository = "https://github.com/jdrouet/no-proxy"
+readme = "readme.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
