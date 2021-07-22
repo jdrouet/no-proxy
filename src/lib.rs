@@ -11,6 +11,17 @@ pub enum NoProxyItem {
     Plain(String),
 }
 
+impl ToString for NoProxyItem {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Wildcard => "*".into(),
+            Self::IpCidr(value, _) => value.clone(),
+            Self::WithDot(value, _, _) => value.clone(),
+            Self::Plain(value) => value.clone(),
+        }
+    }
+}
+
 impl From<String> for NoProxyItem {
     fn from(value: String) -> Self {
         if value == "*" {
@@ -68,7 +79,7 @@ impl NoProxyItem {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct NoProxy {
     content: HashSet<NoProxyItem>,
     has_wildcard: bool,
@@ -116,6 +127,36 @@ impl NoProxy {
             }
         }
         false
+    }
+}
+
+impl ToString for NoProxy {
+    fn to_string(&self) -> String {
+        self.content
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<_>>()
+            .join(",")
+    }
+}
+
+#[cfg(feature = "serialize")]
+impl serde::Serialize for NoProxy {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+#[cfg(feature = "serialize")]
+impl<'de> serde::Deserialize<'de> for NoProxy {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        String::deserialize(deserializer).map(Self::from)
     }
 }
 
@@ -199,5 +240,14 @@ mod tests {
         should_match(pattern, "[::1]");
         should_match(pattern, "[2001:db8:a0b:12f0::1]");
         should_match(pattern, "10.124.7.8");
+    }
+
+    #[cfg(feature = "serialize")]
+    #[test]
+    fn serialization() {
+        let proxy = NoProxy::from("foo.bar,1.2.3.4");
+        let json = serde_json::to_string(&proxy).unwrap();
+        let result: NoProxy = serde_json::from_str(&json).unwrap();
+        assert_eq!(proxy, result);
     }
 }
