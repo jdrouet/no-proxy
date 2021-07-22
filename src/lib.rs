@@ -79,7 +79,7 @@ impl NoProxyItem {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct NoProxy {
     content: HashSet<NoProxyItem>,
     has_wildcard: bool,
