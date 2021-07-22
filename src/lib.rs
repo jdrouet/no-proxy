@@ -242,6 +242,14 @@ mod tests {
         should_match(pattern, "10.124.7.8");
     }
 
+    #[test]
+    fn extending() {
+        let mut first = NoProxy::from("foo.bar");
+        let second = NoProxy::from("*");
+        first.extend(second);
+        assert!(first.has_wildcard);
+    }
+
     #[cfg(feature = "serialize")]
     #[test]
     fn serialization() {
