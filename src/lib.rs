@@ -1,3 +1,6 @@
+#[cfg(feature = "serialize")]
+mod serialize;
+
 use cidr_utils::cidr::IpCidr;
 use std::collections::{hash_set::IntoIter, HashSet};
 use std::net::IpAddr;
@@ -85,18 +88,34 @@ pub struct NoProxy {
     has_wildcard: bool,
 }
 
-impl<T: AsRef<str>> From<T> for NoProxy {
-    fn from(value: T) -> Self {
-        let content: HashSet<_> = value
-            .as_ref()
-            .split(',')
-            .map(|item| NoProxyItem::from(item.trim().to_string()))
+impl NoProxy {
+    fn from_iterator<V: AsRef<str>, I: Iterator<Item = V>>(iterator: I) -> Self {
+        let content: HashSet<_> = iterator
+            .map(|item| NoProxyItem::from(item.as_ref().trim().to_string()))
             .collect();
         let has_wildcard = content.contains(&NoProxyItem::Wildcard);
         Self {
             content,
             has_wildcard,
         }
+    }
+}
+
+impl From<&str> for NoProxy {
+    fn from(value: &str) -> Self {
+        Self::from_iterator(value.split(','))
+    }
+}
+
+impl From<String> for NoProxy {
+    fn from(value: String) -> Self {
+        Self::from_iterator(value.split(','))
+    }
+}
+
+impl From<Vec<String>> for NoProxy {
+    fn from(value: Vec<String>) -> Self {
+        Self::from_iterator(value.iter())
     }
 }
 
@@ -137,26 +156,6 @@ impl ToString for NoProxy {
             .map(ToString::to_string)
             .collect::<Vec<_>>()
             .join(",")
-    }
-}
-
-#[cfg(feature = "serialize")]
-impl serde::Serialize for NoProxy {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(&self.to_string())
-    }
-}
-
-#[cfg(feature = "serialize")]
-impl<'de> serde::Deserialize<'de> for NoProxy {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        String::deserialize(deserializer).map(Self::from)
     }
 }
 
@@ -218,6 +217,12 @@ mod tests {
     }
 
     #[test]
+    fn white_space() {
+        shouldnt_match("", "localhost");
+        shouldnt_match("", "somewhere.local");
+    }
+
+    #[test]
     fn combination() {
         let pattern = "127.0.0.1,localhost,.local,169.254.169.254,fileshare.company.com";
         should_match(pattern, "localhost");
@@ -248,14 +253,5 @@ mod tests {
         let second = NoProxy::from("*");
         first.extend(second);
         assert!(first.has_wildcard);
-    }
-
-    #[cfg(feature = "serialize")]
-    #[test]
-    fn serialization() {
-        let proxy = NoProxy::from("foo.bar,1.2.3.4");
-        let json = serde_json::to_string(&proxy).unwrap();
-        let result: NoProxy = serde_json::from_str(&json).unwrap();
-        assert_eq!(proxy, result);
     }
 }
