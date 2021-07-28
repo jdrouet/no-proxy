@@ -91,7 +91,9 @@ pub struct NoProxy {
 impl NoProxy {
     fn from_iterator<V: AsRef<str>, I: Iterator<Item = V>>(iterator: I) -> Self {
         let content: HashSet<_> = iterator
-            .map(|item| NoProxyItem::from(item.as_ref().trim().to_string()))
+            .map(|item| item.as_ref().trim().to_string())
+            .filter(|item| !item.is_empty())
+            .map(NoProxyItem::from)
             .collect();
         let has_wildcard = content.contains(&NoProxyItem::Wildcard);
         Self {
@@ -136,6 +138,10 @@ impl Extend<NoProxyItem> for NoProxy {
 }
 
 impl NoProxy {
+    pub fn is_empty(&self) -> bool {
+        self.content.is_empty()
+    }
+
     pub fn matches(&self, input: &str) -> bool {
         if self.has_wildcard {
             return true;
@@ -181,6 +187,12 @@ mod tests {
             pattern,
             value
         );
+    }
+
+    #[test]
+    fn filter_empty() {
+        let no_proxy = NoProxy::from("");
+        assert!(no_proxy.is_empty());
     }
 
     #[test]

@@ -65,8 +65,10 @@ mod tests {
         // parsing a comma separated string
         let result: NoProxy = serde_json::from_str(&json).unwrap();
         assert_eq!(proxy, result);
+        assert_eq!(result.content.len(), 2);
         // parsing an array of strings
         let result: NoProxy = serde_json::from_str(r#"["foo.bar", "1.2.3.4"]"#).unwrap();
         assert_eq!(proxy, result);
+        assert_eq!(result.content.len(), 2);
     }
 }
