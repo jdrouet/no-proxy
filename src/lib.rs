@@ -1,3 +1,6 @@
+#[cfg(feature = "graphql")]
+use async_graphql::{InputValueError, InputValueResult, Scalar, ScalarType, Value};
+
 #[cfg(feature = "serialize")]
 mod serialize;
 
@@ -12,6 +15,25 @@ pub enum NoProxyItem {
     IpCidr(String, IpCidr),
     WithDot(String, bool, bool),
     Plain(String),
+}
+
+#[cfg(feature = "graphql")]
+#[Scalar]
+impl ScalarType for NoProxyItem {
+    fn parse(value: Value) -> InputValueResult<Self> {
+        match value {
+            Value::String(s) => Ok(Self::from(s)),
+            _ => Err(InputValueError::expected_type(value)),
+        }
+    }
+
+    fn is_valid(value: &Value) -> bool {
+        matches!(value, Value::String(_))
+    }
+
+    fn to_value(&self) -> Value {
+        Value::String(self.to_string())
+    }
 }
 
 impl ToString for NoProxyItem {
@@ -83,6 +105,7 @@ impl NoProxyItem {
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
+#[cfg_attr(feature = "graphql", derive(async_graphql::SimpleObject))]
 pub struct NoProxy {
     content: HashSet<NoProxyItem>,
     has_wildcard: bool,
