@@ -169,12 +169,7 @@ impl NoProxy {
         if self.has_wildcard {
             return true;
         }
-        for item in self.content.iter() {
-            if item.matches(input) {
-                return true;
-            }
-        }
-        false
+        self.content.iter().any(|item| item.matches(input))
     }
 }
 
