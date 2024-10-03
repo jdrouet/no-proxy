@@ -47,18 +47,21 @@ impl ToString for NoProxyItem {
     }
 }
 
-impl From<String> for NoProxyItem {
-    fn from(value: String) -> Self {
-        if value == "*" {
+impl<V: AsRef<str> + Into<String>> From<V> for NoProxyItem {
+    fn from(value: V) -> Self {
+        let value_str = value.as_ref();
+        if value_str == "*" {
             Self::Wildcard
-        } else if let Ok(ip_cidr) = IpCidr::from_str(&value) {
-            Self::IpCidr(value, ip_cidr)
-        } else if value.starts_with('.') || value.ends_with('.') {
-            let start = value.starts_with('.');
-            let end = value.ends_with('.');
-            Self::WithDot(value, start, end)
+        } else if let Ok(ip_cidr) = IpCidr::from_str(value_str) {
+            Self::IpCidr(value.into(), ip_cidr)
         } else {
-            Self::Plain(value)
+            let start = value_str.starts_with('.');
+            let end = value_str.ends_with('.');
+            if start || end {
+                Self::WithDot(value.into(), start, end)
+            } else {
+                Self::Plain(value.into())
+            }
         }
     }
 }
@@ -114,9 +117,14 @@ pub struct NoProxy {
 impl NoProxy {
     fn from_iterator<V: AsRef<str>, I: Iterator<Item = V>>(iterator: I) -> Self {
         let content: HashSet<_> = iterator
-            .map(|item| item.as_ref().trim().to_string())
-            .filter(|item| !item.is_empty())
-            .map(NoProxyItem::from)
+            .filter_map(|item| {
+                let short = item.as_ref().trim();
+                if short.is_empty() {
+                    None
+                } else {
+                    Some(NoProxyItem::from(short))
+                }
+            })
             .collect();
         let has_wildcard = content.contains(&NoProxyItem::Wildcard);
         Self {
