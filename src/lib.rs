@@ -227,8 +227,8 @@ mod tests {
 
     #[test]
     fn cidr() {
-        should_match("21.19.35.40/24", "21.19.35.4");
-        shouldnt_match("21.19.35.40/24", "127.0.0.1");
+        should_match("21.19.35.0/24", "21.19.35.4");
+        shouldnt_match("21.19.35.0/24", "127.0.0.1");
     }
 
     #[test]
@@ -266,7 +266,7 @@ mod tests {
 
     #[test]
     fn from_reqwest() {
-        let pattern = ".foo.bar,bar.baz,10.42.1.1/24,::1,10.124.7.8,2001::/17";
+        let pattern = ".foo.bar,bar.baz,10.42.1.0/24,::1,10.124.7.8,2001::/17";
         shouldnt_match(pattern, "hyper.rs");
         shouldnt_match(pattern, "foo.bar.baz");
         shouldnt_match(pattern, "10.43.1.1");
