@@ -36,14 +36,20 @@ impl ScalarType for NoProxyItem {
     }
 }
 
-impl ToString for NoProxyItem {
-    fn to_string(&self) -> String {
+impl NoProxyItem {
+    fn as_str(&self) -> &str {
         match self {
-            Self::Wildcard => "*".into(),
-            Self::IpCidr(value, _) => value.clone(),
-            Self::WithDot(value, _, _) => value.clone(),
-            Self::Plain(value) => value.clone(),
+            Self::Wildcard => "*",
+            Self::IpCidr(value, _) | Self::WithDot(value, _, _) | Self::Plain(value) => {
+                value.as_str()
+            }
         }
+    }
+}
+
+impl std::fmt::Display for NoProxyItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
     }
 }
 
@@ -134,21 +140,9 @@ impl NoProxy {
     }
 }
 
-impl From<&str> for NoProxy {
-    fn from(value: &str) -> Self {
-        Self::from_iterator(value.split(','))
-    }
-}
-
-impl From<String> for NoProxy {
-    fn from(value: String) -> Self {
-        Self::from_iterator(value.split(','))
-    }
-}
-
-impl From<Vec<String>> for NoProxy {
-    fn from(value: Vec<String>) -> Self {
-        Self::from_iterator(value.iter())
+impl<V: AsRef<str>> From<V> for NoProxy {
+    fn from(value: V) -> Self {
+        Self::from_iterator(value.as_ref().split(','))
     }
 }
 
@@ -181,13 +175,15 @@ impl NoProxy {
     }
 }
 
-impl ToString for NoProxy {
-    fn to_string(&self) -> String {
-        self.content
-            .iter()
-            .map(ToString::to_string)
-            .collect::<Vec<_>>()
-            .join(",")
+impl std::fmt::Display for NoProxy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for (index, item) in self.content.iter().enumerate() {
+            if index > 0 {
+                write!(f, ",")?;
+            }
+            item.fmt(f)?;
+        }
+        Ok(())
     }
 }
 

@@ -9,7 +9,7 @@ impl Serialize for NoProxy {
     {
         let mut seq = serializer.serialize_seq(Some(self.content.len()))?;
         for elt in self.content.iter() {
-            seq.serialize_element(&elt.to_string())?;
+            seq.serialize_element(elt.as_str())?;
         }
         seq.end()
     }
@@ -49,7 +49,7 @@ impl<'de> Deserialize<'de> for NoProxy {
     {
         deserializer
             .deserialize_any(NoProxyVisitor)
-            .map(NoProxy::from)
+            .map(|list| NoProxy::from_iterator(list.into_iter()))
     }
 }
 
