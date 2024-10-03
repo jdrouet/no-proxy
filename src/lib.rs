@@ -36,29 +36,38 @@ impl ScalarType for NoProxyItem {
     }
 }
 
-impl ToString for NoProxyItem {
-    fn to_string(&self) -> String {
+impl NoProxyItem {
+    fn as_str(&self) -> &str {
         match self {
-            Self::Wildcard => "*".into(),
-            Self::IpCidr(value, _) => value.clone(),
-            Self::WithDot(value, _, _) => value.clone(),
-            Self::Plain(value) => value.clone(),
+            Self::Wildcard => "*",
+            Self::IpCidr(value, _) | Self::WithDot(value, _, _) | Self::Plain(value) => {
+                value.as_str()
+            }
         }
     }
 }
 
-impl From<String> for NoProxyItem {
-    fn from(value: String) -> Self {
-        if value == "*" {
+impl std::fmt::Display for NoProxyItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl<V: AsRef<str> + Into<String>> From<V> for NoProxyItem {
+    fn from(value: V) -> Self {
+        let value_str = value.as_ref();
+        if value_str == "*" {
             Self::Wildcard
-        } else if let Ok(ip_cidr) = IpCidr::from_str(&value) {
-            Self::IpCidr(value, ip_cidr)
-        } else if value.starts_with('.') || value.ends_with('.') {
-            let start = value.starts_with('.');
-            let end = value.ends_with('.');
-            Self::WithDot(value, start, end)
+        } else if let Ok(ip_cidr) = IpCidr::from_str(value_str) {
+            Self::IpCidr(value.into(), ip_cidr)
         } else {
-            Self::Plain(value)
+            let start = value_str.starts_with('.');
+            let end = value_str.ends_with('.');
+            if start || end {
+                Self::WithDot(value.into(), start, end)
+            } else {
+                Self::Plain(value.into())
+            }
         }
     }
 }
@@ -83,7 +92,7 @@ impl NoProxyItem {
                 if value == source {
                     true
                 } else if let Ok(ip_value) = IpAddr::from_str(value) {
-                    ip_cidr.contains(ip_value)
+                    ip_cidr.contains(&ip_value)
                 } else {
                     false
                 }
@@ -114,9 +123,14 @@ pub struct NoProxy {
 impl NoProxy {
     fn from_iterator<V: AsRef<str>, I: Iterator<Item = V>>(iterator: I) -> Self {
         let content: HashSet<_> = iterator
-            .map(|item| item.as_ref().trim().to_string())
-            .filter(|item| !item.is_empty())
-            .map(NoProxyItem::from)
+            .filter_map(|item| {
+                let short = item.as_ref().trim();
+                if short.is_empty() {
+                    None
+                } else {
+                    Some(NoProxyItem::from(short))
+                }
+            })
             .collect();
         let has_wildcard = content.contains(&NoProxyItem::Wildcard);
         Self {
@@ -126,21 +140,9 @@ impl NoProxy {
     }
 }
 
-impl From<&str> for NoProxy {
-    fn from(value: &str) -> Self {
-        Self::from_iterator(value.split(','))
-    }
-}
-
-impl From<String> for NoProxy {
-    fn from(value: String) -> Self {
-        Self::from_iterator(value.split(','))
-    }
-}
-
-impl From<Vec<String>> for NoProxy {
-    fn from(value: Vec<String>) -> Self {
-        Self::from_iterator(value.iter())
+impl<V: AsRef<str>> From<V> for NoProxy {
+    fn from(value: V) -> Self {
+        Self::from_iterator(value.as_ref().split(','))
     }
 }
 
@@ -169,22 +171,19 @@ impl NoProxy {
         if self.has_wildcard {
             return true;
         }
-        for item in self.content.iter() {
-            if item.matches(input) {
-                return true;
-            }
-        }
-        false
+        self.content.iter().any(|item| item.matches(input))
     }
 }
 
-impl ToString for NoProxy {
-    fn to_string(&self) -> String {
-        self.content
-            .iter()
-            .map(ToString::to_string)
-            .collect::<Vec<_>>()
-            .join(",")
+impl std::fmt::Display for NoProxy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for (index, item) in self.content.iter().enumerate() {
+            if index > 0 {
+                write!(f, ",")?;
+            }
+            item.fmt(f)?;
+        }
+        Ok(())
     }
 }
 
@@ -227,8 +226,8 @@ mod tests {
 
     #[test]
     fn cidr() {
-        should_match("21.19.35.40/24", "21.19.35.4");
-        shouldnt_match("21.19.35.40/24", "127.0.0.1");
+        should_match("21.19.35.0/24", "21.19.35.4");
+        shouldnt_match("21.19.35.0/24", "127.0.0.1");
     }
 
     #[test]
@@ -266,7 +265,7 @@ mod tests {
 
     #[test]
     fn from_reqwest() {
-        let pattern = ".foo.bar,bar.baz,10.42.1.1/24,::1,10.124.7.8,2001::/17";
+        let pattern = ".foo.bar,bar.baz,10.42.1.0/24,::1,10.124.7.8,2001::/17";
         shouldnt_match(pattern, "hyper.rs");
         shouldnt_match(pattern, "foo.bar.baz");
         shouldnt_match(pattern, "10.43.1.1");
