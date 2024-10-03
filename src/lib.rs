@@ -83,7 +83,7 @@ impl NoProxyItem {
                 if value == source {
                     true
                 } else if let Ok(ip_value) = IpAddr::from_str(value) {
-                    ip_cidr.contains(ip_value)
+                    ip_cidr.contains(&ip_value)
                 } else {
                     false
                 }
