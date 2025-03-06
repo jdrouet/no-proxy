@@ -17,7 +17,7 @@ graphql = ["async-graphql"]
 
 [dependencies]
 async-graphql = { version = "^7.0", default-features = false, optional = true }
-cidr-utils = "^0.6"
+cidr = "^0.3"
 serde = { version = "^1.0", features = ["derive"], optional = true }
 
 [dev-dependencies]
