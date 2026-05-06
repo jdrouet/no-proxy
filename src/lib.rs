@@ -108,7 +108,9 @@ impl NoProxyItem {
                     source == value
                 }
             }
-            Self::Plain(source) => source == value,
+            Self::Plain(source) => {
+                source == value || value.ends_with(&format!(".{source}"))
+            }
         }
     }
 }
@@ -261,13 +263,17 @@ mod tests {
         let pattern = "127.0.0.1,localhost,.local,169.254.169.254,fileshare.company.com";
         should_match(pattern, "localhost");
         should_match(pattern, "somewhere.local");
+        shouldnt_match(pattern, "local");
+        should_match(pattern, "fileshare.company.com");
+        should_match(pattern, "sub.fileshare.company.com");
+        shouldnt_match(pattern, "other.company.com");
     }
 
     #[test]
     fn from_reqwest() {
         let pattern = ".foo.bar,bar.baz,10.42.1.0/24,::1,10.124.7.8,2001::/17";
         shouldnt_match(pattern, "hyper.rs");
-        shouldnt_match(pattern, "foo.bar.baz");
+        should_match(pattern, "foo.bar.baz");
         shouldnt_match(pattern, "10.43.1.1");
         shouldnt_match(pattern, "10.124.7.7");
         shouldnt_match(pattern, "[ffff:db8:a0b:12f0::1]");
@@ -279,6 +285,17 @@ mod tests {
         should_match(pattern, "[::1]");
         should_match(pattern, "[2001:db8:a0b:12f0::1]");
         should_match(pattern, "10.124.7.8");
+    }
+
+    #[test]
+    fn plain_domain_matches_subdomains() {
+        should_match("example.com", "example.com");
+        should_match("example.com", "sub.example.com");
+        should_match("example.com", "deep.sub.example.com");
+        should_match("apps.example.com", "elasticsearch.apps.example.com");
+        shouldnt_match("example.com", "notexample.com");
+        shouldnt_match("example.com", "google.com");
+        shouldnt_match("example.com", "testexample.com");
     }
 
     #[test]
