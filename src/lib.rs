@@ -108,9 +108,10 @@ impl NoProxyItem {
                     source == value
                 }
             }
-            Self::Plain(source) => {
-                source == value || value.ends_with(&format!(".{source}"))
-            }
+            Self::Plain(source) => match value.strip_suffix(source.as_str()) {
+                Some(prefix) => prefix.is_empty() || prefix.ends_with('.'),
+                None => false,
+            },
         }
     }
 }
