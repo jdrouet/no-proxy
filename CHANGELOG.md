@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.7](https://github.com/jdrouet/no-proxy/compare/v0.3.6...v0.3.7) - 2026-07-06
+
+### Fixed
+
+- plain domain entries should match subdomains ([#12](https://github.com/jdrouet/no-proxy/pull/12))
+
 ## [0.3.6](https://github.com/jdrouet/no-proxy/compare/v0.3.5...v0.3.6) - 2025-03-07
 
 ### Other
