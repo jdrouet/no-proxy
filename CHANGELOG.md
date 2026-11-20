@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.8](https://github.com/jdrouet/no-proxy/compare/v0.3.7...v0.3.8) - 2026-11-20
+
+### Other
+
+- bump actions/checkout to v7 in release-plz ([#16](https://github.com/jdrouet/no-proxy/pull/16))
+- *(deps)* replace deprecated actions-rs and bump checkout to v7 ([#14](https://github.com/jdrouet/no-proxy/pull/14))
+
 ## [0.3.7](https://github.com/jdrouet/no-proxy/compare/v0.3.6...v0.3.7) - 2026-07-06
 
 ### Fixed
