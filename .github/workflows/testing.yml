@@ -6,31 +6,28 @@ jobs:
   format:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly
-          profile: minimal
           components: rustfmt
       - name: run lint
         run: cargo fmt --all --check
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
-      - name: annotate commit with clippy warnings
-        uses: actions-rs/clippy-check@v1
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features
+          components: clippy
+      - name: run clippy
+        run: cargo clippy --all-features -- -D warnings
       - name: execute lib tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
+        run: cargo test
   check-features:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@cargo-hack
       - name: execute lib tests
         run: cargo hack check --feature-powerset --tests
